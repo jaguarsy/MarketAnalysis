@@ -30,7 +30,7 @@ const func = (stationMarketItems) => {
       if (marketItem.buy // 遇到买单，取更大的值作为购买价
         && (target.buy < marketItem.price)) {
         target.buy = marketItem.price;
-      } else if (!target.buy) { // 遇到卖单，取更小的值作为售卖价
+      } else if (!marketItem.buy) { // 遇到卖单，取更小的值作为售卖价
         if (target.sell === null) { // 如果售卖价格为null，直接赋值
           target.sell = marketItem.price;
         } else if (target.sell > marketItem.price) {

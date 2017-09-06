@@ -8,7 +8,7 @@ const path = require('path');
 
 const table = new Table({
   head: ['#', 'ID', 'EN', 'ZH', '每立方利润', '预计营业额', '数量', '价格', '体积'],
-  colWidths: [5, 10, 60, 40, 16, 16, 6, 16, 10],
+  colWidths: [5, 10, 60, 40, 18, 20, 6, 16, 10],
 });
 
 const FREIGHT_PRICE = 700;  // 运费
@@ -17,6 +17,11 @@ const format = (num) => {
   return parseFloat(Math.round(num * 100) / 100)
     .toFixed(2)
     .replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+};
+
+const today = new Date();
+const pdLeft = (num) => {
+  return num < 10 ? `0${num}` : num;
 };
 
 const func = (goodSoldItems) => {
@@ -28,7 +33,7 @@ const func = (goodSoldItems) => {
     // 每立方米的利润
     const profitPerCubicMeter = (p.recommendPrice) / p.volume - FREIGHT_PRICE;
     const expectedProfitPerItem = p.recommendPrice * 0.95 - p.jitaPrice - FREIGHT_PRICE * p.volume;
-    const expectedProfitPerDay = (expectedProfitPerItem * p.avgVolumes);
+    const expectedProfitPerDay = (expectedProfitPerItem * p.avgVolumes * 0.5);
 
     result.push({
       typeID: p.typeID,
@@ -52,10 +57,6 @@ const func = (goodSoldItems) => {
   let sumCostPrice = 0;
   let sumProfit = 0;
   sortedResult.forEach((p, idx) => {
-    p.profitPerCubicMeter = format(p.profitPerCubicMeter);
-    p.expectedProfitPerDay = format(p.expectedProfitPerDay);
-    p.recommendPrice = format(p.recommendPrice);
-
     sumVolume += p.volume * p.num;
     sumCostPrice += p.jitaPrice * p.num;
     sumProfit += p.expectedProfitPerItem * p.num;
@@ -65,17 +66,21 @@ const func = (goodSoldItems) => {
       p.typeID,
       p.nameEN,
       p.nameZH,
-      p.profitPerCubicMeter,
-      p.expectedProfitPerDay,
+      format(p.profitPerCubicMeter),
+      format(p.expectedProfitPerDay),
       p.num,
-      p.recommendPrice,
+      format(p.recommendPrice),
       p.volume * p.num,
     ]);
   });
 
   console.log(table.toString());
 
-  fs.writeFileSync(path.join(__dirname, '../data/analysisResult.json'), JSON.stringify(sortedResult));
+  fs.writeFileSync(
+    path.join(__dirname,
+      '../data/analysisResult-' +
+      `${today.getFullYear()}${pdLeft(today.getMonth() + 1)}${pdLeft(today.getDate())}.json`),
+    JSON.stringify(sortedResult));
 
   let dailyShoppingList = sortedResult
     .map(p => `${p.nameEN} x${p.num}`)

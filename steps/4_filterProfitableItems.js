@@ -52,7 +52,7 @@ const func = (freightGoodItems) => {
           - localStationItem.freight) / item.sell.min;   // 运费
 
         if (profitRate >= LIMIT_PROFIT_RATE // 过滤利润率小于基准利润率的物品
-          && item.sell.min < 20000000) { // 过滤单价大于2000w的物品，减少风险
+          && item.sell.min < 10000000) { // 过滤单价大于2000w的物品，减少风险
           result.push({
             jitaPrice: item.sell.min,
             recommendPrice: recommendPrice,
