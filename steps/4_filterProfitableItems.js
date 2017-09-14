@@ -6,13 +6,11 @@ const fs = require('fs');
 const path = require('path');
 // 吉他物价
 const BASE_URL = 'http://api.eve-central.com/api/marketstat/json';
-const LIMIT_PROFIT_RATE = 0.30; // 预期盈利比例，以共和舰队狂战士为标准 (3000000 - 2099955 - 25*700)/2099955 = 0.42
+const LIMIT_PROFIT_RATE = 0.20; // 预期盈利比例，以共和舰队狂战士为标准 (3000000 - 2099955 - 25*700)/2099955 = 0.42
 
-const blackList = [46151];
-
-const func = (freightGoodItems) => {
+const func = (freightGoodItems, regionID) => {
   const typeIDs = freightGoodItems
-    .filter(p => blackList.indexOf(p.typeID) < 0)
+    .filter(p => p.typeID < 46150)
     .map(p => p.typeID);
 
   return new Promise((resolve, reject) => {
@@ -52,7 +50,7 @@ const func = (freightGoodItems) => {
           - localStationItem.freight) / item.sell.min;   // 运费
 
         if (profitRate >= LIMIT_PROFIT_RATE // 过滤利润率小于基准利润率的物品
-          && item.sell.min < 10000000) { // 过滤单价大于2000w的物品，减少风险
+          && item.sell.min < 25000000) { // 过滤单价大于2000w的物品，减少风险
           result.push({
             jitaPrice: item.sell.min,
             recommendPrice: recommendPrice,
@@ -69,7 +67,7 @@ const func = (freightGoodItems) => {
 
       const sortedResult = result.sort((a, b) => (b.profitRate - a.profitRate));
 
-      fs.writeFileSync(path.join(__dirname, '../data/OSY_ProfitableItems.json'), JSON.stringify(sortedResult));
+      fs.writeFileSync(path.join(__dirname, `../data/${regionID}_ProfitableItems.json`), JSON.stringify(sortedResult));
 
       console.log(`已筛选出${result.length}件物品`);
       resolve(sortedResult);

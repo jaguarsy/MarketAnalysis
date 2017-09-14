@@ -6,12 +6,12 @@
 const request = require('request');
 const fs = require('fs');
 const path = require('path');
-const url = 'https://crest-tq.eveonline.com/market/10000012/orders/all/'; // 需要过滤出OSY-UD IX(60012799)空间站
+// const url = 'https://crest-tq.eveonline.com/market/10000012/orders/all/'; // 需要过滤出OSY-UD IX(60012799)空间站
 
-const func = () => {
+const func = (regionID) => {
   return new Promise((resolve, reject) => {
     console.log('2: 正在获取所有本地市场的物价');
-    request(url, (err, res, body) => {
+    request(`https://crest-tq.eveonline.com/market/${regionID}/orders/all/`, (err, res, body) => {
       if (err) {
         console.log(err);
         reject(err);
@@ -19,7 +19,7 @@ const func = () => {
       }
 
       const items = JSON.parse(body).items; //.filter(p => p.stationID === 60012799);
-      fs.writeFileSync(path.join(__dirname, '../data/OSY_MarketItems.json'), JSON.stringify(items));
+      fs.writeFileSync(path.join(__dirname, `../data/${regionID}_MarketItems.json`), JSON.stringify(items));
       resolve(items);
 
       console.log(`已获取${items.length}件物品`);

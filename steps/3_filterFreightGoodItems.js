@@ -7,14 +7,14 @@ const path = require('path');
 const allTypes = require('../data/typeIDs.json');
 
 // 体积限制
-const VOLUME_LIMIT = 2000;
+const VOLUME_LIMIT = 3000;
 // 当前运费
 const FREIGHT_PRICE = 700;
 
 // 预期的运费所占售价的比例
-const PREIGHT_VOL_RAGE = 0.02;
+const PREIGHT_VOL_RAGE = 0.1;
 
-const func = (stationMarketItems) => {
+const func = (stationMarketItems, regionID) => {
   console.log('3: 正在根据运费比例计算所有可能盈利的物品');
 
   const result = [];
@@ -56,7 +56,7 @@ const func = (stationMarketItems) => {
       (p.freight / (p.sell || p.buy) < PREIGHT_VOL_RAGE);  // 运费比例小于预期
   });
 
-  fs.writeFileSync(path.join(__dirname, '../data/OSY_FreightGoodItems.json'), JSON.stringify(filteredResult));
+  fs.writeFileSync(path.join(__dirname, `../data/${regionID}_FreightGoodItems.json`), JSON.stringify(filteredResult));
 
   console.log(`已筛选出${filteredResult.length}件物品`);
   console.log('done.');

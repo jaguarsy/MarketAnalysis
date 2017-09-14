@@ -12,12 +12,13 @@ try {
   priceHistoryCache = {};
 }
 
-// https://crest-tq.eveonline.com/market/10000012/history/?type=https://crest-tq.eveonline.com/inventory/types/9491/
 // Curse星域的售卖历史
-const url = 'https://crest-tq.eveonline.com/market/10000012/history/?type=https://crest-tq.eveonline.com/inventory/types/';
+// const url = 'https://crest-tq.eveonline.com/market/10000012/history/?type=https://crest-tq.eveonline.com/inventory/types/';
 
-const func = (profitableItems) => {
+const func = (profitableItems, regionID) => {
   console.log('5: 根据售卖历史，过滤出过去14天的日均销售额达到标准的物品');
+
+  const url = `https://crest-tq.eveonline.com/market/${regionID}/history/?type=https://crest-tq.eveonline.com/inventory/types/`;
 
   const RANGE = 14;
   const today = new Date();
@@ -44,10 +45,11 @@ const func = (profitableItems) => {
           }
 
           const result = JSON.parse(body);
-          const priceHistory = result.items;
+          const priceHistory = result.items || [];
           const len = priceHistory.length;
           let sumPrice = 0;
           let sumVolumes = 0;
+          let sumAvgPrice = 0;
           let i = len - RANGE - 1;
           if (i < 0) {
             i = 0;
@@ -58,19 +60,22 @@ const func = (profitableItems) => {
             if (new Date(price.date) >= startDate) {
               sumPrice += price.volume * (price.avgPrice || 0);
               sumVolumes += price.volume;
+              sumAvgPrice += price.avgPrice || 0;
             }
           }
 
           const avgSales = sumPrice / RANGE;
           const avgVolumes = sumVolumes / RANGE;
+          const avgPrice = sumAvgPrice / RANGE;
 
           priceHistoryCache[typeID] = {
             date: new Date(),
             avgSales,
             avgVolumes,
+            avgPrice,
           };
 
-          resolve({ avgSales, avgVolumes });
+          resolve({ avgSales, avgVolumes, avgPrice });
         });
       }
     });
@@ -87,14 +92,14 @@ const func = (profitableItems) => {
       return profitableItems.reduce((P, item) => {
         return P.then(() => {
           return getAverageSalesOf7Days(item.typeID)
-            .then(({ avgSales, avgVolumes }) => {
+            .then(({ avgSales, avgVolumes, avgPrice }) => {
               if (avgSales >= salesLimit && avgVolumes >= volumeLimit) {
                 console.log(`${item.typeID}\t${item.nameEN}\t${avgSales}\t${avgVolumes}`);
 
                 result.push({
                   jitaPrice: item.jitaPrice,
-                  recommendPrice: item.recommendPrice,
-                  localSellPrice: item.localSellPrice,
+                  recommendPrice: avgPrice * 0.9,
+                  localSellPrice: avgPrice,
                   localBuyPrice: item.localBuyPrice,
                   typeID: item.typeID,
                   nameEN: item.nameEN,
@@ -108,11 +113,12 @@ const func = (profitableItems) => {
             });
         });
       }, Promise.resolve()).then(() => {
-        const sortedResult = result.sort((a, b) => {
-          return b.avgSales - a.avgSales;
-        });
-        fs.writeFileSync(path.join(__dirname, '../data/OSY_PriceHistoryCache.json'), JSON.stringify(priceHistoryCache));
-        fs.writeFileSync(path.join(__dirname, '../data/OSY_GoodSoldItems.json'), JSON.stringify(sortedResult));
+        const sortedResult = result
+          .sort((a, b) => {
+            return b.avgSales - a.avgSales;
+          });
+        fs.writeFileSync(path.join(__dirname, `../data/${regionID}_PriceHistoryCache.json`), JSON.stringify(priceHistoryCache));
+        fs.writeFileSync(path.join(__dirname, `../data/${regionID}_GoodSoldItems.json`), JSON.stringify(sortedResult));
 
         console.log(`已筛选出${sortedResult.length}件物品`);
         console.log('done.');

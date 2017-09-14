@@ -24,7 +24,7 @@ const pdLeft = (num) => {
   return num < 10 ? `0${num}` : num;
 };
 
-const func = (goodSoldItems) => {
+const func = (goodSoldItems, regionID) => {
   console.log('6: 分析出最适合进货的商品');
 
   const result = [];
@@ -33,7 +33,7 @@ const func = (goodSoldItems) => {
     // 每立方米的利润
     const profitPerCubicMeter = (p.recommendPrice) / p.volume - FREIGHT_PRICE;
     const expectedProfitPerItem = p.recommendPrice * 0.95 - p.jitaPrice - FREIGHT_PRICE * p.volume;
-    const expectedProfitPerDay = (expectedProfitPerItem * p.avgVolumes * 0.5);
+    const expectedProfitPerDay = (expectedProfitPerItem * p.avgVolumes);
 
     result.push({
       typeID: p.typeID,
@@ -42,49 +42,54 @@ const func = (goodSoldItems) => {
       profitPerCubicMeter,
       expectedProfitPerDay,
       expectedProfitPerItem,
-      num: Math.floor(p.avgVolumes * 0.5),
+      num: Math.floor(p.avgVolumes),
       recommendPrice: p.recommendPrice,
       volume: p.volume,
       jitaPrice: p.jitaPrice,
     });
   });
 
-  const sortedResult = result.sort((a, b) => {
-    return b.expectedProfitPerDay - a.expectedProfitPerDay;
-  });
+  const sortedResult = result
+    .filter(p => p.expectedProfitPerDay > 1000000)
+    .sort((a, b) => {
+      return b.expectedProfitPerDay - a.expectedProfitPerDay;
+    });
 
   let sumVolume = 0;
   let sumCostPrice = 0;
   let sumProfit = 0;
-  sortedResult.forEach((p, idx) => {
-    sumVolume += p.volume * p.num;
-    sumCostPrice += p.jitaPrice * p.num;
-    sumProfit += p.expectedProfitPerItem * p.num;
+  sortedResult
+    .forEach((p, idx) => {
+      sumVolume += p.volume * p.num;
+      sumCostPrice += p.jitaPrice * p.num;
+      sumProfit += p.expectedProfitPerItem * p.num;
 
-    table.push([
-      idx + 1,
-      p.typeID,
-      p.nameEN,
-      p.nameZH,
-      format(p.profitPerCubicMeter),
-      format(p.expectedProfitPerDay),
-      p.num,
-      format(p.recommendPrice),
-      p.volume * p.num,
-    ]);
-  });
+      table.push([
+        idx + 1,
+        p.typeID,
+        p.nameEN,
+        p.nameZH,
+        format(p.profitPerCubicMeter),
+        format(p.expectedProfitPerDay),
+        p.num,
+        format(p.recommendPrice),
+        p.volume * p.num,
+      ]);
+    });
 
   console.log(table.toString());
 
   fs.writeFileSync(
     path.join(__dirname,
-      '../data/analysisResult-' +
+      `../data/${regionID}_analysisResult-` +
       `${today.getFullYear()}${pdLeft(today.getMonth() + 1)}${pdLeft(today.getDate())}.json`),
     JSON.stringify(sortedResult));
 
   let dailyShoppingList = sortedResult
     .map(p => `${p.nameEN} x${p.num}`)
     .join('\n');
+
+  let profitRate = ((sumProfit * 100 / sumCostPrice)).toFixed(2);
 
   dailyShoppingList += '\n---------------------\n';
   console.log(`总体积：${format(sumVolume)} m^3`);
@@ -93,8 +98,10 @@ const func = (goodSoldItems) => {
   dailyShoppingList += `成本价：${format(sumCostPrice)} isk\n`;
   console.log(`预期利润：${format(sumProfit)} isk`);
   dailyShoppingList += `预期利润：${format(sumProfit)} isk`;
+  console.log(`回报率：${profitRate}%`);
+  dailyShoppingList += `回报率：${profitRate}%`;
 
-  fs.writeFileSync(path.join(__dirname, '../data/dailyShoppingList.txt'), dailyShoppingList);
+  fs.writeFileSync(path.join(__dirname, `../data/${regionID}_dailyShoppingList.txt`), dailyShoppingList);
 
   console.log('done.');
   return sortedResult;
