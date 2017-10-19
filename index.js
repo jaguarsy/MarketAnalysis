@@ -12,9 +12,9 @@ getAllMarketItemsPrice(regionID)
   .then((data) => {
     return filterFreightGoodItems(data, regionID);
   })
-  .then((data) => {
-    return filterProfitableItems(data, regionID);
-  })
+  // .then((data) =>
+  //   return filterProfitableItems(data, regionID);
+  // })
   .then((data) => {
     return filterGoodSoldItems(data, regionID);
   })
